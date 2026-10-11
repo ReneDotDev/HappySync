@@ -17,6 +17,52 @@ import (
 	"github.com/zeebo/blake3"
 )
 
+func TestCanceledEngineDrainsWatcherUntilClose(t *testing.T) {
+	cfg, err := config.Init(t.TempDir(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	e, err := New(ctx, cfg, Options{Network: network.Config{Listen: []string{"/ip4/127.0.0.1/tcp/0"}, DisableMDNS: true, DisableDHT: true}})
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		cancel()
+		e.Wait()
+		if err := e.Close(); err != nil {
+			t.Errorf("close canceled engine: %v", err)
+		}
+	})
+	if e.watcher == nil {
+		t.Fatal("filesystem watcher unavailable")
+	}
+	cancel()
+	e.Wait()
+	// Require actual native notifications after the coordinator stops. Windows
+	// can still emit these while a final Add or Close waits on its I/O reader.
+	// Use the backend's writer rather than injecting into its owned channels.
+	deadline := time.NewTimer(2 * time.Second)
+	defer deadline.Stop()
+	for {
+		select {
+		case <-e.wake:
+			continue
+		default:
+		}
+		break
+	}
+	if err := os.WriteFile(filepath.Join(e.root, "late-notification"), []byte("late event"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-e.wake:
+	case <-deadline.C:
+		t.Fatal("canceled engine stopped draining native watcher notifications")
+	}
+}
+
 // A synchronous coordinator fixture exposes scan/apply boundaries without
 // racing the production loop. Networking still uses a real secure local host.
 func coordinator(t *testing.T) (*Engine, context.Context) {

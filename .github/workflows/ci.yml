@@ -28,6 +28,11 @@ jobs:
         env:
           HAPPYSYNC_INTEGRATION_RACE: '1'
         run: go test -race -count=1 -timeout=15m ./...
+      - name: Repeated Windows directory shutdown and recovery
+        if: runner.os == 'Windows'
+        env:
+          HAPPYSYNC_INTEGRATION_RACE: '1'
+        run: go test -race -count=5 -timeout=5m ./tests/integration -run '^TestEmptyDirectoriesReplicateAndDeleteWhilePeerOffline$'
       - name: Vet
         run: go vet ./...
       - name: Build native executable

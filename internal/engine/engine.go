@@ -95,6 +95,7 @@ type Engine struct {
 	manifests   map[string]model.Manifest
 	wake        chan struct{}
 	watcher     *fsnotify.Watcher
+	watchWG     sync.WaitGroup
 	done        chan struct{}
 	lastBytes   uint64
 	lastSent    uint64
@@ -154,8 +155,12 @@ func New(ctx context.Context, cfg *config.Config, opts Options) (*Engine, error)
 	e.status.PeerID = e.node.PeerID()
 	e.status.Addresses = e.node.Addresses()
 	if e.watcher, err = fsnotify.NewWatcher(); err == nil {
+		e.watchWG.Add(1)
+		go func() {
+			defer e.watchWG.Done()
+			e.watch()
+		}()
 		e.watchDirectories()
-		go e.watch(ctx)
 	} else {
 		e.status.Warnings = append(e.status.Warnings, "filesystem notifications unavailable; scans remain enabled")
 	}
@@ -165,6 +170,7 @@ func New(ctx context.Context, cfg *config.Config, opts Options) (*Engine, error)
 func (e *Engine) Close() error {
 	if e.watcher != nil {
 		e.watcher.Close()
+		e.watchWG.Wait()
 	}
 	if e.node != nil {
 		e.node.Close()
@@ -210,11 +216,13 @@ func (e *Engine) signal() {
 	default:
 	}
 }
-func (e *Engine) watch(ctx context.Context) {
+func (e *Engine) watch() {
+	// Drain notifications until the watcher closes, including after the engine
+	// context is canceled. Windows Add and Close wait for the reader goroutine,
+	// which can still be delivering an event/error during shutdown. Exiting this
+	// consumer early can deadlock both the final scan and watcher teardown.
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case event, ok := <-e.watcher.Events:
 			if !ok {
 				return
