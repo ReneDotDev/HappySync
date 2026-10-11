@@ -1,6 +1,6 @@
 # Contributing to HappySync
 
-Read [PLAN.md](PLAN.md), [architecture](docs/architecture.md), and the relevant protocol or reconciliation notes before changing behavior. The implementation is early; document evidence and limitations instead of describing untested network paths as working.
+Read [README.md](README.md), [architecture](docs/architecture.md), and the relevant protocol or reconciliation notes before changing behavior. The implementation is early; document evidence and limitations instead of describing untested network paths as working.
 
 ## Build and validate
 

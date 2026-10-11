@@ -1,6 +1,6 @@
 # Validation evidence and remaining acceptance
 
-These notes distinguish executable checks from broader deployment acceptance. The agreed scope includes all milestones in `PLAN.md`, plus default `.git/` and `node_modules/` exclusions and configurable gitignore-style rules. After local implementation validation, the user authorized testing on a disposable EC2 instance. Separate consumer NAT and production capacity acceptance remain distinct from that test.
+These notes distinguish executable checks from broader deployment acceptance. Validation covers synchronization, discovery, conflict preservation, persisted recovery, default `.git/` and `node_modules/` exclusions, and configurable gitignore-style rules. After local implementation validation, the user authorized testing on a disposable EC2 instance. Separate consumer NAT and production capacity acceptance remain distinct from that test.
 
 ## Repeatable local checks
 

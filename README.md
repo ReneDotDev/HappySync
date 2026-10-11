@@ -4,7 +4,7 @@ HappySync synchronizes a folder across devices that share one secret invitation.
 
 HappySync uses Go, libp2p secure transports, BLAKE3 verified blocks, and durable SQLite state. There is no mandatory HappySync-operated service or central file storage. LAN discovery, public DHT discovery, manual peers, and explicitly configured infrastructure provide alternative ways to connect.
 
-**Status:** an early implementation with automated local validation and real macOS-to-EC2 tests of TCP, QUIC, automatic hosted discovery through a configured relay, and default public DHT discovery. Native Linux arm64 network and integration tests passed on EC2. Separate consumer NATs, DCUtR hole punching, sustained server capacity, and native Windows/Linux amd64 acceptance remain pending. See [validation evidence](docs/validation.md), [connectivity details](docs/connectivity-spike.md), and [the specification](PLAN.md).
+**Status:** an early implementation with automated local validation and real macOS-to-EC2 tests of TCP, QUIC, automatic hosted discovery through a configured relay, and default public DHT discovery. Native Linux arm64 network and integration tests passed on EC2. Separate consumer NATs, DCUtR hole punching, sustained server capacity, and native Windows/Linux amd64 acceptance remain pending. See [validation evidence](docs/validation.md), [connectivity details](docs/connectivity-spike.md), and [architecture](docs/architecture.md).
 
 ## Get started
 
