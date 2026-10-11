@@ -41,6 +41,12 @@ func TestMain(m *testing.M) {
 
 func redacted(s string) string { return invitationPattern.ReplaceAllString(s, "[redacted invitation]") }
 
+func raceOptions(logPath string) string {
+	// ThreadSanitizer separates unquoted options at colons and spaces. Quote the
+	// full path so a Windows drive letter or a spaced temporary root stays intact.
+	return strings.TrimSpace(os.Getenv("GORACE") + ` atexit_sleep_ms=0 log_path="` + filepath.ToSlash(logPath) + `"`)
+}
+
 func executable(t *testing.T) string {
 	t.Helper()
 	if testing.Short() {
@@ -125,7 +131,7 @@ func (n *instance) command(cwd, input string, args ...string) (string, error) {
 	// Persist race-detector diagnostics independently of detached stderr file
 	// descriptors; stop() inspects every log before releasing the fixture.
 	if os.Getenv("HAPPYSYNC_INTEGRATION_RACE") == "1" {
-		cmd.Env = append(os.Environ(), "GORACE="+strings.TrimSpace(os.Getenv("GORACE")+" atexit_sleep_ms=0 log_path="+filepath.Join(n.root, ".HappySync", "logs", "race")))
+		cmd.Env = append(os.Environ(), "GORACE="+raceOptions(filepath.Join(n.root, ".HappySync", "logs", "race")))
 	}
 	cmd.Stdin = strings.NewReader(input)
 	var stdout bytes.Buffer
