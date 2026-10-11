@@ -1,0 +1,10 @@
+.HappySync/
+.HappySync-server/
+/server-state/
+/HappySync
+/HappySync.exe
+/dist/
+*.test
+coverage.out
+.DS_Store
+node_modules/

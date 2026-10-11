@@ -1,0 +1,84 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: true
+      - name: Unit and independent-process integration tests
+        run: go test -count=1 -timeout=15m ./...
+      - name: Race detector
+        env:
+          HAPPYSYNC_INTEGRATION_RACE: '1'
+        run: go test -race -count=1 -timeout=15m ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Build native executable
+        run: go build -trimpath -buildvcs=false ./cmd/HappySync
+
+  scale:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: true
+      - name: Comprehensive 100,000-file inventory
+        env:
+          HAPPYSYNC_SCALE_SCAN: '1'
+        run: go test -count=1 -timeout=15m -v ./internal/index -run TestScan100K
+      - name: Multi-GiB independent-process transfer
+        env:
+          HAPPYSYNC_LARGE_TRANSFER: '1'
+        run: go test -count=1 -timeout=15m -v ./tests/integration -run TestMultiGiBProcessTransfer
+      - name: 100,000-file engine persistence and restart
+        env:
+          HAPPYSYNC_SCALE_ENGINE: '1'
+        run: go test -count=1 -timeout=15m -v ./tests/integration -run TestHundredThousandFilesEngineIndexAndRestart
+
+  artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: true
+      - name: Build six portable artifacts
+        run: go run ./cmd/release --version v0.1.0-dev
+      - name: Verify checksums
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS
+      - name: Inspect executable and dynamic dependencies
+        run: |
+          file dist/HappySync-*
+          ! readelf -d dist/HappySync-v0.1.0-dev-linux-amd64 | grep NEEDED
+          ! readelf -d dist/HappySync-v0.1.0-dev-linux-arm64 | grep NEEDED
+          dist/HappySync-v0.1.0-dev-linux-amd64 version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HappySync-review-builds
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
