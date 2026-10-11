@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build linux || darwin
 
 package daemon
 
@@ -59,9 +59,3 @@ func dialLocal(root string) (net.Conn, error) {
 }
 func cleanupLocal(p string) { os.Remove(p) }
 func Detach(cmd *exec.Cmd)  { cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true} }
-
-func watchProcess(pid int) (func(time.Duration) error, func(), error) {
-	// Root ownership is released after engine, database and log cleanup. Unix
-	// permits removal of the inherited stderr file while the process exits.
-	return func(time.Duration) error { return nil }, func() {}, nil
-}

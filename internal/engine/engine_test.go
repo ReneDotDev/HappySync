@@ -40,7 +40,7 @@ func TestCanceledEngineDrainsWatcherUntilClose(t *testing.T) {
 	}
 	cancel()
 	e.Wait()
-	// Require actual native notifications after the coordinator stops. Windows
+	// Require actual native notifications after the coordinator stops. A backend
 	// can still emit these while a final Add or Close waits on its I/O reader.
 	// Use the backend's writer rather than injecting into its owned channels.
 	deadline := time.NewTimer(2 * time.Second)

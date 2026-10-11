@@ -8,15 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
 )
 
 // This helper deliberately races only in a subprocess. Its report verifies the
-// real sanitizer parser and diagnostic destination, including Windows drive
-// colons and directories containing spaces.
+// real sanitizer parser and diagnostic destination, including colons and
+// directories containing spaces.
 func TestRaceDiagnosticsHelper(t *testing.T) {
 	if os.Getenv("HAPPYSYNC_RACE_PATH_HELPER") != "1" {
 		return
@@ -42,12 +41,7 @@ func TestRaceDiagnosticsPathWithSpacesAndColon(t *testing.T) {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	name := "report"
-	if runtime.GOOS != "windows" {
-		// Windows contributes its colon in the absolute drive prefix.
-		name = "drive:report"
-	}
-	prefix := filepath.Join(dir, name)
+	prefix := filepath.Join(dir, "drive:report")
 	binary, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)

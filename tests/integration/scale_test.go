@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -18,9 +17,6 @@ import (
 )
 
 func workerResidentBytes(n *instance) int64 {
-	if runtime.GOOS == "windows" {
-		return 0
-	}
 	root, err := filepath.EvalSymlinks(n.root)
 	if err != nil {
 		return 0

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"testing"
 
@@ -309,9 +308,6 @@ func TestVersionOneUpgradePreservesState(t *testing.T) {
 }
 
 func TestDatabaseAndWALPermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Windows ACL protection is tested by config")
-	}
 	root := t.TempDir()
 	s, err := Open(root)
 	if err != nil {

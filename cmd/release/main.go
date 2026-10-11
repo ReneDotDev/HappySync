@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-const defaultTargets = "linux/amd64,linux/arm64,darwin/amd64,darwin/arm64,windows/amd64,windows/arm64"
+const defaultTargets = "linux/amd64,linux/arm64,darwin/amd64,darwin/arm64"
 
 type target struct{ OS, Arch string }
 
@@ -120,9 +120,6 @@ func run(args []string) error {
 	var checksums strings.Builder
 	for _, t := range targets {
 		name := "HappySync-" + *version + "-" + t.OS + "-" + t.Arch
-		if t.OS == "windows" {
-			name += ".exe"
-		}
 		// Publish each file only after a complete successful build. A failed
 		// build must not replace a previously reviewable executable.
 		stage, err := os.CreateTemp(*output, ".build-*")

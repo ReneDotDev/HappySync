@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -120,9 +119,6 @@ func fileHash(root, path string) (string, error) {
 }
 
 func residentBytes(pid int) int64 {
-	if runtime.GOOS == "windows" {
-		return 0 // RSS sampling via ps is available on the Unix test platforms.
-	}
 	out, err := exec.Command("ps", "-o", "rss=", "-p", strconv.Itoa(pid)).Output()
 	if err != nil {
 		return 0

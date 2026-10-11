@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -70,15 +69,13 @@ func TestPersistentMembershipAndIdentity(t *testing.T) {
 	if !bytes.Equal(before, after) {
 		t.Fatal("mismatch changed config")
 	}
-	if runtime.GOOS != "windows" {
-		for _, path := range []string{StateDir(root), filepath.Join(StateDir(root), "config.json"), filepath.Join(StateDir(root), "identity.key")} {
-			st, err := os.Stat(path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if st.Mode().Perm()&0077 != 0 {
-				t.Fatalf("unprotected %s", path)
-			}
+	for _, path := range []string{StateDir(root), filepath.Join(StateDir(root), "config.json"), filepath.Join(StateDir(root), "identity.key")} {
+		st, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st.Mode().Perm()&0077 != 0 {
+			t.Fatalf("unprotected %s", path)
 		}
 	}
 }
@@ -131,9 +128,6 @@ func TestSavePreferencesPreservesMembership(t *testing.T) {
 }
 
 func TestRejectSymlinkedStateAndIdentity(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("symlink creation requires Windows privileges")
-	}
 	root := t.TempDir()
 	target := t.TempDir()
 	if err := os.Symlink(target, StateDir(root)); err != nil {

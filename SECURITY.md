@@ -12,7 +12,7 @@ A share key is a bearer capability granting full read, write, and delete access.
 
 libp2p authenticates transport identities and encrypts network traffic. HappySync additionally requires fresh group-membership proofs on each synchronization stream before returning metadata, availability, or blocks. Relay operators carry encrypted traffic and do not receive file contents or group secrets. Discovery operators receive opaque lookup labels, peer IDs, and addresses; observers can still infer linkability and network presence. HappySync does not provide anonymity.
 
-Local synchronized files are plaintext. `.HappySync/config.json` contains the invitation; `.HappySync/identity.key` contains the device private key. Unix private state uses restrictive permissions; Windows private state uses owner-scoped access controls. The local status/stop endpoint is owner-restricted. Operating-system compromise or access as the same account is outside the threat model. Protect local disks and backups accordingly.
+Local synchronized files are plaintext. `.HappySync/config.json` contains the invitation; `.HappySync/identity.key` contains the device private key. Private state on Linux and macOS uses restrictive owner permissions. The local status/stop endpoint is owner-restricted. Operating-system compromise or access as the same account is outside the threat model. Protect local disks and backups accordingly.
 
 ## Safeguards and limits
 

@@ -3,7 +3,6 @@ module github.com/happysync/happysync
 go 1.26.0
 
 require (
-	github.com/Microsoft/go-winio v0.6.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/ipfs/go-cid v0.6.0
 	github.com/libp2p/go-libp2p v0.48.0
@@ -12,7 +11,6 @@ require (
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.49.0
-	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.35.0
 	modernc.org/sqlite v1.46.1
 )
@@ -117,6 +115,7 @@ require (
 	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.43.0 // indirect

@@ -4,13 +4,13 @@ HappySync synchronizes a folder across devices that share one secret invitation.
 
 HappySync uses Go, libp2p secure transports, BLAKE3 verified blocks, and durable SQLite state. There is no mandatory HappySync-operated service or central file storage. LAN discovery, public DHT discovery, manual peers, and explicitly configured infrastructure provide alternative ways to connect.
 
-**Status:** an early implementation with automated local validation and real macOS-to-EC2 tests of TCP, QUIC, automatic hosted discovery through a configured relay, and default public DHT discovery. Native Linux arm64 network and integration tests passed on EC2. Separate consumer NATs, DCUtR hole punching, sustained server capacity, and native Windows/Linux amd64 acceptance remain pending. See [validation evidence](docs/validation.md), [connectivity details](docs/connectivity-spike.md), and [architecture](docs/architecture.md).
+**Status:** an early implementation with automated local validation and real macOS-to-EC2 tests of TCP, QUIC, automatic hosted discovery through a configured relay, and default public DHT discovery. HappySync supports Linux and macOS on amd64 and arm64. Native Linux arm64 network and integration tests passed on EC2; Linux amd64 and macOS arm64 tests, race detection, and vet passed in GitHub CI. Separate consumer NATs, DCUtR hole punching, sustained server capacity, and native macOS amd64 acceptance remain pending. See [validation evidence](docs/validation.md), [connectivity details](docs/connectivity-spike.md), and [architecture](docs/architecture.md).
 
 ## Get started
 
-Download a binary for your operating system and processor from [GitHub Releases](https://github.com/ReneDotDev/HappySync/releases). Preview releases are marked as prereleases. `darwin` means macOS; `amd64` means Intel/AMD 64-bit, and `arm64` covers Apple Silicon and other ARM64 processors. Each release includes `SHA256SUMS` and build metadata.
+Download a Linux or macOS binary for your processor from [GitHub Releases](https://github.com/ReneDotDev/HappySync/releases). Preview releases are marked as prereleases. `darwin` means macOS; `amd64` means Intel/AMD 64-bit, and `arm64` covers Apple Silicon and other ARM64 processors. Each release includes `SHA256SUMS` and build metadata.
 
-On macOS or Linux, verify the downloaded file against `SHA256SUMS`, then rename it to `HappySync` and make it executable with `chmod +x HappySync`. On Windows, verify it with PowerShell's `Get-FileHash -Algorithm SHA256` and rename it to `HappySync.exe`.
+Verify the downloaded file against `SHA256SUMS`, then rename it to `HappySync` and make it executable with `chmod +x HappySync`.
 
 Alternatively, build from source with Go 1.26 or newer:
 
@@ -34,7 +34,7 @@ cd shared
 HappySync --key 'hsync1:YOUR_SHARE_KEY'
 ```
 
-The current working directory is the default sync root. `--folder /path/to/shared` selects another existing folder; relative paths resolve against your current directory. Windows uses `HappySync.exe` with the same commands and flags.
+The current working directory is the default sync root. `--folder /path/to/shared` selects another existing folder; relative paths resolve against your current directory.
 
 Add, edit, or delete regular files on either side. Peers discover each other where enabled network paths work and eventually converge. A newly joined empty folder cannot delete remote files. Existing contents of a newly joined folder are reconciled as imports.
 
@@ -56,7 +56,7 @@ HappySync status --folder ./shared --json
 HappySync stop --folder ./shared
 ```
 
-The launcher returns after the child initializes its state and control endpoint and sends READY. One instance owns each root. The stop command waits for worker resource cleanup and root-lock release before reporting success; on Windows it also waits for the worker process to exit. Restarting reuses its invitation and persistent device identity. A different invitation for an initialized folder is rejected; use a fresh folder to join a different group.
+The launcher returns after the child initializes its state and control endpoint and sends READY. One instance owns each root. The stop command waits for worker resource cleanup and root-lock release before reporting success. Restarting reuses its invitation and persistent device identity. A different invitation for an initialized folder is rejected; use a fresh folder to join a different group.
 
 Background application events are redacted and actively rotated in `.HappySync/logs/operations.log`. Native library stderr goes to `worker.log`, whose retention guard truncates it when it exceeds 10 MiB at startup and once per second while running. It may briefly grow between checks; truncation drops older native messages. Keep diagnostics private.
 
@@ -114,7 +114,7 @@ Per-path causal version vectors distinguish newer operations from concurrent edi
 
 Files are split into 4 MiB blocks. Downloads use concurrent sources, verify every block and assembled whole-file hash, and retain unfinished verified work across restart. Partially downloaded peers can serve verified blocks. Files become visible only after verified staging and replacement, with durable recovery bookkeeping. Completed cache blocks are released while installed files remain available as sources.
 
-V1 supports regular files and directories with portable names. It rejects traversal, reserved Windows names, and case/Unicode collisions; inspect status if a path cannot be synchronized. Permissions, ownership, extended attributes, symlinks, and special files are outside the replication model. See [architecture](docs/architecture.md), [protocol](docs/protocol.md), and [security policy](SECURITY.md).
+V1 supports regular files and directories with portable names. It rejects traversal, reserved device names, and case/Unicode collisions; inspect status if a path cannot be synchronized. Permissions, ownership, extended attributes, symlinks, and special files are outside the replication model. See [architecture](docs/architecture.md), [protocol](docs/protocol.md), and [security policy](SECURITY.md).
 
 File modification times are preserved on a best-effort basis where supported; causal vectors determine edit ordering. Stop before moving a root, and let interrupted recovery complete at its original location first. Join another device with the invitation in a fresh root; copying `.HappySync/` to another device duplicates its identity and is unsupported.
 
@@ -129,6 +129,6 @@ go vet ./...
 go run ./cmd/release --version v0.1.0
 ```
 
-The release command builds CGO-free Linux, macOS, and Windows binaries for amd64 and arm64 into `dist/`, with `SHA256SUMS` and build metadata. `--targets linux/amd64,darwin/arm64` selects a subset. Go is required to build, not to run the resulting client. Identical source, toolchain, dependency checksums, target, and version determine reproducibility; use identical inputs when comparing hashes.
+The release command builds four CGO-free Linux and macOS binaries for amd64 and arm64 into `dist/`, with `SHA256SUMS` and build metadata. `--targets linux/amd64,darwin/arm64` selects a subset. Go is required to build, not to run the resulting client. Identical source, toolchain, dependency checksums, target, and version determine reproducibility; use identical inputs when comparing hashes.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) covers tests, repository layout, protocol changes, and release review. CI includes native Linux/macOS/Windows tests and race detection plus cross-platform release artifacts; a manual CI run also exercises the large-file and 100,000-file fixtures. [Validation notes](docs/validation.md) distinguish measured local evidence from external acceptance still pending. This repository is licensed under the [MIT license](LICENSE).
+[CONTRIBUTING.md](CONTRIBUTING.md) covers tests, repository layout, protocol changes, and release review. CI includes native Linux/macOS tests and race detection plus cross-platform release artifacts; a manual CI run also exercises the large-file and 100,000-file fixtures. [Validation notes](docs/validation.md) distinguish measured local evidence from external acceptance still pending. This repository is licensed under the [MIT license](LICENSE).

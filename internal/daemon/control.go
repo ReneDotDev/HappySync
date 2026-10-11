@@ -65,8 +65,7 @@ func Request(root, command string, out any) error {
 }
 
 // Stop acknowledges shutdown only after the worker releases its resources and
-// root ownership. On Windows, waiting on the captured process handle also
-// ensures inherited diagnostic files are no longer held open.
+// root ownership.
 func Stop(root string, timeout time.Duration) error {
 	if timeout <= 0 {
 		return errors.New("invalid shutdown timeout")
@@ -80,11 +79,6 @@ func Stop(root string, timeout time.Duration) error {
 	if current.PID <= 0 {
 		return errors.New("invalid worker process identity")
 	}
-	waitProcess, closeProcess, err := watchProcess(current.PID)
-	if err != nil {
-		return err
-	}
-	defer closeProcess()
 	deadline := time.Now().Add(timeout)
 	var reply struct {
 		State string `json:"state"`
@@ -94,9 +88,6 @@ func Stop(root string, timeout time.Duration) error {
 	}
 	if reply.State != "stopping" {
 		return errors.New("invalid shutdown acknowledgment")
-	}
-	if err := waitProcess(time.Until(deadline)); err != nil {
-		return err
 	}
 	for {
 		lock, err := Lock(root)

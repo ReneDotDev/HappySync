@@ -13,11 +13,11 @@ HAPPYSYNC_INTEGRATION_RACE=1 go test -race -count=1 ./...
 go vet ./...
 ```
 
-Some tests open real loopback TCP/QUIC sockets or multicast listeners and start subprocesses. A sandbox or firewall may prevent them. Report environmental failures explicitly. Test fixtures use temporary folders, isolated keys, and content-hash assertions; never run destructive synchronization tests against personal folders. Native CI covers Linux, macOS, and Windows. Cross-compilation complements native testing and cannot replace it.
+Some tests open real loopback TCP/QUIC sockets or multicast listeners and start subprocesses. A sandbox or firewall may prevent them. Report environmental failures explicitly. Test fixtures use temporary folders, isolated keys, and content-hash assertions; never run destructive synchronization tests against personal folders. Native CI covers Linux and macOS; these are the supported operating systems. Cross-compilation complements native testing and cannot replace it.
 
 Optional performance tests and measured results are documented with their commands in `docs/` when available. Large-scale acceptance should use disposable storage and retain the exact dataset size, duration, resource measurements, platform, and final hashes.
 
-To instrument the separately spawned CLI workers as well as the Go test harness, run `HAPPYSYNC_INTEGRATION_RACE=1 go test -race -count=1 ./...` on Unix. In PowerShell, set `$env:HAPPYSYNC_INTEGRATION_RACE = '1'` before the test command. Normal test runs skip the expensive opt-in fixtures. `docs/validation.md` lists their commands; a manually dispatched CI workflow runs them on Linux.
+To instrument the separately spawned CLI workers as well as the Go test harness, run `HAPPYSYNC_INTEGRATION_RACE=1 go test -race -count=1 ./...`. Normal test runs skip the expensive opt-in fixtures. `docs/validation.md` lists their commands; a manually dispatched CI workflow runs them on Linux.
 
 ## Repository layout
 

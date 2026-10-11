@@ -17,7 +17,7 @@ flowchart LR
   T --> F[Verified staging and filesystem replacement]
 ```
 
-The foreground command and detached worker run the same engine. The parent of a background worker waits for READY after state initialization and the control endpoint have succeeded. Unix uses a private local socket and lock; Windows uses an owner-restricted named pipe and native lock. An unreachable control endpoint reports a stopped instance, rather than displaying old connectivity information. HappySync does not install an automatic boot service.
+The foreground command and detached worker run the same engine. The parent of a background worker waits for READY after state initialization and the control endpoint have succeeded. Linux and macOS use a private local socket and file lock. An unreachable control endpoint reports a stopped instance, rather than displaying old connectivity information. HappySync does not install an automatic boot service.
 
 The index maps safe physical paths to normalized portable paths, reads scoped ignore rules, and creates BLAKE3 manifests. Notifications prompt scans; periodic comprehensive scans recompute hashes even when size and timestamps match. Failed inventory never becomes an authoritative deletion snapshot. Ignored, unsupported, and rejected paths remain visible in warnings where applicable.
 
@@ -41,7 +41,7 @@ A second destination check after journal persistence protects edits made during 
 | `.HappySync/runtime/` | Local lock/control runtime state |
 | `.HappySync/logs/` | Private worker diagnostics |
 
-All state is reserved from synchronization. Unix private state is restricted to the owner; Windows uses owner ACLs. The config and identity contain secrets and must never be committed or included in public diagnostics. A folder's state is part of its recovery history: deleting it discards clocks, tombstones, and identity. Do not reset it as a troubleshooting shortcut.
+All state is reserved from synchronization. Private state on Linux and macOS is restricted to the owner. The config and identity contain secrets and must never be committed or included in public diagnostics. A folder's state is part of its recovery history: deleting it discards clocks, tombstones, and identity. Do not reset it as a troubleshooting shortcut.
 
 Application events in `operations.log` are redacted and rotated during use. Native library stderr retains an inherited append descriptor to `worker.log`; a guard truncates the same file above 10 MiB at startup and at one-second intervals. This is a periodic retention limit with possible growth between checks, not a strict byte-write quota. It discards older native history while avoiding descriptor replacement races.
 
@@ -71,4 +71,4 @@ Wire messages use strongly typed, bounded JSON with a big-endian length prefix. 
 
 Transport encryption uses mature libp2p QUIC/TLS and secure TCP negotiation. Group membership is an additional stream handshake using independent HKDF keys and fresh MAC challenges, not a new encryption transport. The current libp2p API does not expose a common authenticated transport exporter for this construction; proofs bind both transport-authenticated Peer IDs and the versioned stream protocol. See [protocol](protocol.md) for exact bytes and limitations.
 
-Public DHT provider policies, consumer NATs, DCUtR success, and VPS deployment remain external acceptance work explicitly deferred by the user. Automated loopback/multicast/circuit tests validate local behavior only. Native Linux/Windows CI is provided; cross-compilation on macOS is separate evidence, not a native test result.
+Public DHT provider policies, consumer NATs, DCUtR success, and VPS deployment remain external acceptance work explicitly deferred by the user. Automated loopback/multicast/circuit tests validate local behavior only. Native Linux and macOS CI is provided; cross-compilation for another architecture is separate evidence, not a native test result.

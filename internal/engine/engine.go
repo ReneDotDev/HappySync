@@ -218,7 +218,7 @@ func (e *Engine) signal() {
 }
 func (e *Engine) watch() {
 	// Drain notifications until the watcher closes, including after the engine
-	// context is canceled. Windows Add and Close wait for the reader goroutine,
+	// context is canceled. Native Add and Close can wait for the reader goroutine,
 	// which can still be delivering an event/error during shutdown. Exiting this
 	// consumer early can deadlock both the final scan and watcher teardown.
 	for {

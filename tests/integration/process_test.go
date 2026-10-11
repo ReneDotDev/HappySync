@@ -43,7 +43,7 @@ func redacted(s string) string { return invitationPattern.ReplaceAllString(s, "[
 
 func raceOptions(logPath string) string {
 	// ThreadSanitizer separates unquoted options at colons and spaces. Quote the
-	// full path so a Windows drive letter or a spaced temporary root stays intact.
+	// full path so a colon or a spaced temporary root stays intact.
 	return strings.TrimSpace(os.Getenv("GORACE") + ` atexit_sleep_ms=0 log_path="` + filepath.ToSlash(logPath) + `"`)
 }
 
@@ -64,9 +64,6 @@ func executable(t *testing.T) string {
 		}
 		binaryBuildDir = dir
 		binaryPath = filepath.Join(dir, "HappySync")
-		if runtime.GOOS == "windows" {
-			binaryPath += ".exe"
-		}
 		_, source, _, _ := runtime.Caller(0)
 		repo := filepath.Clean(filepath.Join(filepath.Dir(source), "..", ".."))
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
