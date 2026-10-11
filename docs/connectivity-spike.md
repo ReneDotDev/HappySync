@@ -1,8 +1,8 @@
 # Connectivity prototype and local acceptance
 
-The connectivity gate was adapted with user approval: external public DHT,
-consumer NAT, and VPS acceptance will be performed after implementation. Local
-tests demonstrate protocol behavior and do not establish Internet reachability.
+The connectivity gate was adapted with user approval: external tests followed
+implementation and local validation. Local tests demonstrate protocol behavior;
+the separate EC2 evidence below establishes the Internet paths actually tested.
 
 Pinned versions: Go 1.26, go-libp2p 0.48.0, go-libp2p-kad-dht 0.39.0.
 The application uses QUIC/TLS and TCP with libp2p's default secure negotiation,
@@ -90,11 +90,34 @@ must include TCP or QUIC endpoints; unspecified/multicast addresses and nested
 relay paths are rejected. Responses are bounded and written after releasing
 the registration table lock. It does not receive shares, manifests, or file paths.
 
-## External validation pending
+## Real Internet validation
 
-Public bootstrap reachability, public provider advertising policy, relay
-address publication under real NAT, DCUtR success across separate NATs, and
-VPS throughput remain unverified. Status labels retain this distinction.
+On 2026-10-11, the Linux arm64 release ran natively on a disposable Amazon Linux
+2023 EC2 instance. Public TCP and QUIC connections from macOS passed full-hash
+transfer, deletion, offline recovery, conflict preservation, ignore, and restart
+checks. A configured EC2 circuit relay passed the same checks with both clients
+restricted to loopback listeners: each reported one relayed and zero direct sync
+connections. Hosted discovery registered both clients, and server metrics counted
+14,211,458 forwarded bytes. That initial relay run used a manual circuit hint.
+A separate run without any sync peer hint exposed and then verified a fix for
+reserved circuit publication and hosted candidate route retention. The rebuilt
+release automatically discovered and authenticated both loopback-only clients,
+passed all content checks and fresh bidirectional transfers after restart, and
+reported zero direct sync connections with 14,283,189 forwarded bytes.
+
+A separate fresh-identity run used default public DHT bootstraps with no manual
+peer addresses, hosted discovery, relays, or mDNS. The Mac discovered EC2, both
+authenticated a direct connection, and independently computed SHA-256 hashes
+matched for markers in both directions. This is actual public provider discovery
+for this deployment, without an inference about the final underlying transport
+or other NAT combinations. See [validation evidence](validation.md) and
+[remote test instructions](../tests/remote/README.md).
+
+## Further external validation
+
+Other public provider policies, relay publication across other NAT topologies,
+DCUtR success across separate NATs, and sustained VPS throughput remain
+unverified. Publication health alone does not establish peer discovery or delivery.
 Blocked Internet discovery leaves LAN, manual peers, and configured hosted
 discovery available. A public community relay is not assumed to carry files.
 Hosted discovery and relay are separate options on the same server binary;

@@ -43,16 +43,19 @@ func (n *Node) discoverDHT(bootstrap []peer.AddrInfo) {
 	}
 }
 func (n *Node) reserveRelays(relays []peer.AddrInfo) {
-	ok := false
 	for _, p := range relays {
-		ctx, cancel := context.WithTimeout(n.ctx, 15*time.Second)
-		_, err := client.Reserve(ctx, n.host, p)
-		cancel()
-		if err == nil {
-			ok = true
+		if !n.relayAddresses.due(p.ID, time.Now()) {
+			continue
 		}
+		ctx, cancel := context.WithTimeout(n.ctx, 15*time.Second)
+		reservation, err := client.Reserve(ctx, n.host, p)
+		cancel()
+		if err != nil {
+			reservation = nil
+		}
+		n.relayAddresses.refresh(p, reservation, time.Now())
 	}
-	if ok {
+	if len(n.relayAddresses.factory(nil)) > 0 {
 		n.health("relay", "reservation active")
 	} else {
 		n.health("relay", "reservation unavailable; retrying")
@@ -103,11 +106,17 @@ func (n *Node) discoverServers(servers []peer.AddrInfo) {
 					if e != nil {
 						continue
 					}
+					var combined peer.AddrInfo
 					for _, info := range infos {
 						if info.ID.String() == p.ID {
-							n.HandlePeerFound(info)
+							combined.ID = info.ID
+							combined.Addrs = append(combined.Addrs, info.Addrs...)
 						}
 					}
+					// Keep all routes in one candidate. Separate announcements
+					// overwrite retry state with the last (possibly direct-only)
+					// address while an earlier attempt is backing off.
+					n.HandlePeerFound(combined)
 				}
 			}
 		}

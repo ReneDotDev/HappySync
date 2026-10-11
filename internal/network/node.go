@@ -65,6 +65,7 @@ type Node struct {
 	closeOnce        sync.Once
 	key, lookup      []byte
 	provider         cid.Cid
+	relayAddresses   *relayAddresses
 	dht              *dht.IpfsDHT
 	mdns             mdns.Service
 	mu               sync.RWMutex
@@ -151,6 +152,10 @@ func newNode(ctx context.Context, cfg Config, extra ...libp2p.Option) (*Node, er
 	}
 	opts := hostOptions(cfg.Identity, cfg.Listen)
 	opts = append(opts, extra...)
+	reservedAddresses := newRelayAddresses()
+	if len(relays) > 0 {
+		opts = append(opts, libp2p.AddrsFactory(reservedAddresses.factory))
+	}
 	if len(relays) > 0 {
 		opts = append(opts, libp2p.EnableAutoRelayWithStaticRelays(relays))
 	}
@@ -161,6 +166,7 @@ func newNode(ctx context.Context, cfg Config, extra ...libp2p.Option) (*Node, er
 	ctx, cancel := context.WithCancel(ctx)
 	n := &Node{host: h, ctx: ctx, cancel: cancel, key: derive(cfg.Secret, cfg.SyncID, "HappySync/v1/auth"), lookup: derive(cfg.Secret, cfg.SyncID, "HappySync/v1/discovery"), provider: DiscoveryCID(cfg.Secret, cfg.SyncID), authenticated: map[peer.ID]bool{}, candidates: map[peer.ID]time.Time{}, attempts: map[peer.ID]retryState{}, failedAuth: map[peer.ID][]time.Time{}, incoming: map[peer.ID]int{}, queue: make(chan peer.AddrInfo, 128), slots: make(chan struct{}, 64), outgoing: make(chan struct{}, 64), stats: Stats{MDNS: "disabled", DHT: "disabled", Discovery: "not configured", Relay: "not configured"}}
 	n.candidatePeers = make(map[peer.ID]peer.AddrInfo)
+	n.relayAddresses = reservedAddresses
 	n.upload.rate, n.download.rate = cfg.UploadBytesPerSecond, cfg.DownloadBytesPerSecond
 	n.stats.UploadRateLimit, n.stats.DownloadRateLimit = cfg.UploadBytesPerSecond, cfg.DownloadBytesPerSecond
 	for _, p := range manual {
@@ -222,7 +228,9 @@ func newNode(ctx context.Context, cfg Config, extra ...libp2p.Option) (*Node, er
 	}
 	if len(relays) > 0 {
 		n.health("relay", "configured")
-		n.loop(10*time.Minute, func() { n.reserveRelays(relays) })
+		// Only due leases send requests. Checking each second permits short
+		// reservations to renew before expiry and bounds failure retry cadence.
+		n.loop(time.Second, func() { n.reserveRelays(relays) })
 	}
 	return n, nil
 }
@@ -266,7 +274,15 @@ func addresses(h host.Host) []string {
 	}
 	return out
 }
-func (n *Node) Addresses() []string { return addresses(n.host) }
+func (n *Node) Addresses() []string {
+	var out []string
+	// libp2p sorts host addresses after applying its factory. Reapply only the
+	// ordering here so hosted registration prioritizes live reserved circuits.
+	for _, address := range n.relayAddresses.factory(n.host.Addrs()) {
+		out = append(out, address.String()+"/p2p/"+n.host.ID().String())
+	}
+	return out
+}
 func (n *Node) Close() error {
 	var err error
 	n.closeOnce.Do(func() {

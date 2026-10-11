@@ -4,7 +4,7 @@ HappySync synchronizes a folder across devices that share one secret invitation.
 
 HappySync uses Go, libp2p secure transports, BLAKE3 verified blocks, and durable SQLite state. There is no mandatory HappySync-operated service or central file storage. LAN discovery, public DHT discovery, manual peers, and explicitly configured infrastructure provide alternative ways to connect.
 
-**Status:** an early implementation with automated local validation. Real public DHT acceptance, separate consumer NATs, DCUtR hole punching, and VPS deployment remain pending. Cross-compilation does not establish native Windows/Linux behavior; the included CI tests those platforms when run. See [connectivity validation](docs/connectivity-spike.md) and [the specification](PLAN.md).
+**Status:** an early implementation with automated local validation and real macOS-to-EC2 tests of TCP, QUIC, automatic hosted discovery through a configured relay, and default public DHT discovery. Native Linux arm64 network and integration tests passed on EC2. Separate consumer NATs, DCUtR hole punching, sustained server capacity, and native Windows/Linux amd64 acceptance remain pending. See [validation evidence](docs/validation.md), [connectivity details](docs/connectivity-spike.md), and [the specification](PLAN.md).
 
 ## Get started
 
@@ -79,7 +79,7 @@ Repeatable `--ignore '*.tmp'` rules are saved in local configuration and take pr
 
 ## Connectivity and self-hosting
 
-Clients enable LAN mDNS and DHT discovery by default. DHT uses public libp2p bootstrap nodes unless you supply `--bootstrap`; public provider-record compatibility remains an external acceptance item. You can disable providers with `--no-mdns` and `--no-dht`.
+Clients enable LAN mDNS and DHT discovery by default. DHT uses public libp2p bootstrap nodes unless you supply `--bootstrap`; default public discovery has been verified between fresh Mac and EC2 peers on one deployment. Reachability still depends on your network and public providers, and discovery can take several retry cycles. You can disable providers with `--no-mdns` and `--no-dht`.
 
 For manual connection, copy a peer's printed address, including its `/p2p/<PeerID>` suffix:
 
