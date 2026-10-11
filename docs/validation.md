@@ -37,7 +37,7 @@ Coverage does not establish every behavior on a different operating system or ex
 
 Local development platform: macOS arm64, Go 1.26.0, 2026-10-11.
 
-The complete package race suite passed. The independent-process integration suite passed normally in 67.627 seconds and with instrumented workers in 117.649 seconds. Focused cleanup/crash/resume recovery passed in 51.287 seconds; directory lifecycle coverage passed in 6.31 seconds. `go vet ./...`, module checksum verification, and a module-tidy comparison also passed without dependency changes. These are local macOS results; remote CI remains pending.
+The complete package race suite passed. The independent-process integration suite passed normally in 67.627 seconds and with instrumented workers in 117.649 seconds. Focused cleanup/crash/resume recovery passed in 51.287 seconds; directory lifecycle coverage passed in 6.31 seconds. `go vet ./...`, module checksum verification, and a module-tidy comparison also passed without dependency changes. These are local macOS results; native GitHub CI evidence is recorded separately below.
 
 `go test -race ./internal/network` passed with real loopback/multicast/circuit traffic. It includes actual paced encrypted delivery at 128 KiB/s, reservation/stream/byte-budget refusal, retry after a single discovery announcement, bounded failed-auth accounting, and hosted registration capacity recovery. [Connectivity notes](connectivity-spike.md) list the tested paths and exact derivation.
 
@@ -72,6 +72,14 @@ The multi-GiB fixture uses a 2 GiB + 17 byte file with unique 4 MiB blocks, stre
 | Verified file length | 2,147,483,665 bytes |
 
 The staging peak includes verified blocks and the assembly; completed blocks are released after installation. These local loopback measurements include verification/restart work and must not be presented as Internet throughput or relay capacity.
+
+## First preview release preparation
+
+The supported release targets are Linux and macOS on amd64 and arm64. The Linux/macOS-only source passed the local instrumented independent-process integration suite in 116.559 seconds, focused configuration/store/daemon/status/engine race suites, release-target rejection tests, `go vet ./...`, and module checksum verification. Unsupported platform selections are rejected before release artifacts are created.
+
+All four `v0.1.0-alpha.1` binaries compiled from that source. Two builds produced identical `SHA256SUMS` and `build.json`; each artifact's size and SHA-256 matched the metadata, including the current module-file digests. Architecture inspection confirmed both Linux ELF executables are statically linked and both macOS executables depend only on OS libraries/frameworks. Native macOS arm64 `version` and `--help` passed.
+
+[Native CI run 38177026792](https://github.com/ReneDotDev/HappySync/actions/runs/38177026792) passed for source commit `f0bd3ff1b69d00e597058a1736b2cf56ebf1323d`: Linux amd64 and macOS arm64 each completed normal tests, instrumented subprocess race detection, vet, and a native build. The artifact job built all four supported targets, verified checksums, checked static Linux linkage, and ran the Linux amd64 version command. Optional scale fixtures were skipped because this was a push run. The release tag adds this validation record without further application-code changes. Native macOS amd64 acceptance and broader external network/capacity checks remain pending.
 
 ## Real EC2 validation
 
