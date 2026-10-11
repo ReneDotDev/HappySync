@@ -8,7 +8,11 @@ HappySync uses Go, libp2p secure transports, BLAKE3 verified blocks, and durable
 
 ## Get started
 
-Build with Go 1.26 or newer:
+Download a binary for your operating system and processor from [GitHub Releases](https://github.com/ReneDotDev/HappySync/releases). Preview releases are marked as prereleases. `darwin` means macOS; `amd64` means Intel/AMD 64-bit, and `arm64` covers Apple Silicon and other ARM64 processors. Each release includes `SHA256SUMS` and build metadata.
+
+On macOS or Linux, verify the downloaded file against `SHA256SUMS`, then rename it to `HappySync` and make it executable with `chmod +x HappySync`. On Windows, verify it with PowerShell's `Get-FileHash -Algorithm SHA256` and rename it to `HappySync.exe`.
+
+Alternatively, build from source with Go 1.26 or newer:
 
 ```sh
 go build -trimpath -o HappySync ./cmd/HappySync
@@ -52,7 +56,7 @@ HappySync status --folder ./shared --json
 HappySync stop --folder ./shared
 ```
 
-The launcher returns after the child initializes its state and control endpoint and sends READY. One instance owns each root. Restarting reuses its invitation and persistent device identity. A different invitation for an initialized folder is rejected; use a fresh folder to join a different group.
+The launcher returns after the child initializes its state and control endpoint and sends READY. One instance owns each root. The stop command waits for worker resource cleanup and root-lock release before reporting success; on Windows it also waits for the worker process to exit. Restarting reuses its invitation and persistent device identity. A different invitation for an initialized folder is rejected; use a fresh folder to join a different group.
 
 Background application events are redacted and actively rotated in `.HappySync/logs/operations.log`. Native library stderr goes to `worker.log`, whose retention guard truncates it when it exceeds 10 MiB at startup and once per second while running. It may briefly grow between checks; truncation drops older native messages. Keep diagnostics private.
 

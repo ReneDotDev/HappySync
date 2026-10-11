@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -294,6 +295,9 @@ func TestDiscoveryCIDVector(t *testing.T) {
 	}
 }
 func TestLocalMDNS(t *testing.T) {
+	if os.Getenv("HAPPYSYNC_MDNS_TEST") != "1" {
+		t.Skip("set HAPPYSYNC_MDNS_TEST=1 on a host with local multicast available; hosted CI does not guarantee multicast routing")
+	}
 	cfg := testConfig()
 	cfg.DisableMDNS = false
 	cfg.Listen = []string{"/ip4/0.0.0.0/udp/0/quic-v1"}
@@ -305,6 +309,14 @@ func TestLocalMDNS(t *testing.T) {
 	}
 	if len(a.Peers()) != 1 || len(b.Peers()) != 1 {
 		t.Fatalf("local multicast discovery failed: A=%+v B=%+v", a.Stats(), b.Stats())
+	}
+	backend := &testBackend{data: []byte("verified content over an mDNS-discovered peer")}
+	b.SetBackend(backend)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	got, err := a.FetchBlock(ctx, b.host.ID(), fmt.Sprintf("%x", blake3.Sum256(backend.data)), int64(len(backend.data)))
+	if err != nil || !bytes.Equal(got, backend.data) {
+		t.Fatalf("mDNS-discovered encrypted transfer: %v", err)
 	}
 }
 func TestLocalDHTProviderDiscovery(t *testing.T) {

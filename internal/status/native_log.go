@@ -43,7 +43,7 @@ func OpenNativeLog(path string, maximum int64) (*os.File, error) {
 		return nil, errors.New("native log path changed while opening")
 	}
 	if opened.Size() > maximum {
-		if err := f.Truncate(0); err != nil {
+		if err := truncateNativeLog(f); err != nil {
 			f.Close()
 			return nil, err
 		}
@@ -84,7 +84,7 @@ func StartNativeLogGuard(ctx context.Context, path string, maximum int64, interv
 			case <-ticker.C:
 				info, err := f.Stat()
 				if err == nil && info.Size() > maximum {
-					err = f.Truncate(0)
+					err = truncateNativeLog(f)
 				}
 				if err != nil {
 					g.failures <- err

@@ -432,11 +432,10 @@ func printStart(key string, s engine.Status, mode string) {
 }
 func control(command string, o options) error {
 	if command == "stop" {
-		var out map[string]string
-		if err := daemon.Request(o.folder, "stop", &out); err != nil {
+		if err := daemon.Stop(o.folder, 30*time.Second); err != nil {
 			return err
 		}
-		fmt.Println("HappySync stopping")
+		fmt.Println("HappySync stopped")
 		return nil
 	}
 	var s engine.Status

@@ -114,6 +114,11 @@ func TestNativeLogStartupTruncatesExistingInode(t *testing.T) {
 		t.Fatal(err)
 	}
 	original, _ := os.Stat(path)
+	inherited, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer inherited.Close()
 	f, err := OpenNativeLog(path, 64)
 	if err != nil {
 		t.Fatal(err)
@@ -122,5 +127,13 @@ func TestNativeLogStartupTruncatesExistingInode(t *testing.T) {
 	info, err := f.Stat()
 	if err != nil || info.Size() != 0 || !os.SameFile(original, info) {
 		t.Fatal("startup did not truncate existing native descriptor")
+	}
+	wanted := []byte("diagnostic after startup truncation\n")
+	if _, err := inherited.Write(wanted); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(data, wanted) {
+		t.Fatalf("inherited descriptor failed after startup truncation: %q %v", data, err)
 	}
 }

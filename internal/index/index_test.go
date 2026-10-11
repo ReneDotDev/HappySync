@@ -90,7 +90,7 @@ func TestIgnoresNestedNegationAndWarnings(t *testing.T) {
 }
 func TestPortableSafety(t *testing.T) {
 	root := t.TempDir()
-	for _, p := range []string{"../escape", "/absolute", "a/../../b", "C:/windows", "a\\b", "a\x00b", "a//b", ".HappySync/key", "dir/.happysync/key", "NUL", "com1.txt", "trail.", "a:b", "e\u0301.txt"} {
+	for _, p := range []string{"../escape", "/absolute", "a/../../b", "C:/windows", "a\\b", "a\x00b", "a\x7fb", "a//b", ".HappySync/key", "dir/.happysync/key", "NUL", "com1.txt", "trail.", "a:b", "e\u0301.txt"} {
 		if _, err := SafePath(root, p); err == nil {
 			t.Errorf("accepted unsafe path %q", p)
 		}
@@ -159,9 +159,38 @@ func TestForcedScanVerifiesBytesBeyondCachedStat(t *testing.T) {
 }
 func TestUnsupportedFileAbortsInsteadOfFalseDeletion(t *testing.T) {
 	root := t.TempDir()
-	put(t, root, "bad:name", nil)
-	if _, _, _, err := Scan(root); err == nil {
+	put(t, root, "a-safe", []byte("preserve this baseline"))
+	previous, manifests, _, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A colon creates an NTFS alternate data stream on Windows, rather than
+	// an entry visible to WalkDir. DEL is a real filename on all supported
+	// filesystems but is excluded from HappySync's portable path format.
+	const unsupported = "bad\x7fname"
+	put(t, root, unsupported, nil)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, entry := range entries {
+		if entry.Name() == unsupported {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("unsupported fixture must be visible in the directory inventory")
+	}
+	baseline, nextManifests, _, err := Scan(root, ScanOptions{Previous: previous, PreviousManifests: manifests})
+	if err == nil {
 		t.Fatal("unsafe path must abort snapshot")
+	}
+	if baseline != nil || nextManifests != nil {
+		t.Fatal("failed inventory must not expose an incomplete authoritative snapshot")
+	}
+	if previous["a-safe"].Hash == "" {
+		t.Fatal("failed inventory changed the previous baseline")
 	}
 }
 

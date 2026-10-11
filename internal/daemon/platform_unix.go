@@ -4,6 +4,7 @@ package daemon
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -22,7 +23,10 @@ func lockFile(path string) (*RootLock, error) {
 	}
 	if e = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); e != nil {
 		f.Close()
-		return nil, fmt.Errorf("already running; use HappySync status")
+		if errors.Is(e, syscall.EWOULDBLOCK) || errors.Is(e, syscall.EAGAIN) {
+			return nil, fmt.Errorf("%w; use HappySync status", ErrAlreadyRunning)
+		}
+		return nil, e
 	}
 	return &RootLock{f}, nil
 }
@@ -55,3 +59,9 @@ func dialLocal(root string) (net.Conn, error) {
 }
 func cleanupLocal(p string) { os.Remove(p) }
 func Detach(cmd *exec.Cmd)  { cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true} }
+
+func watchProcess(pid int) (func(time.Duration) error, func(), error) {
+	// Root ownership is released after engine, database and log cleanup. Unix
+	// permits removal of the inherited stderr file while the process exits.
+	return func(time.Duration) error { return nil }, func() {}, nil
+}

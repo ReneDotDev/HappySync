@@ -10,13 +10,14 @@ Run from the repository root with Go 1.26.0:
 go test -count=1 ./...
 HAPPYSYNC_INTEGRATION_RACE=1 go test -race -count=1 ./...
 go vet ./...
+HAPPYSYNC_MDNS_TEST=1 go test -race -count=1 -v ./internal/network -run TestLocalMDNS
 HAPPYSYNC_SCALE_SCAN=1 go test -count=1 -v ./internal/index -run TestScan100K
 HAPPYSYNC_SCALE_ENGINE=1 go test -count=1 -timeout=15m -v ./tests/integration -run TestHundredThousandFilesEngineIndexAndRestart
 HAPPYSYNC_LARGE_TRANSFER=1 go test -count=1 -timeout=15m -v ./tests/integration -run TestMultiGiBProcessTransfer
 go run ./cmd/release --version v0.1.0-dev
 ```
 
-PowerShell uses `$env:HAPPYSYNC_INTEGRATION_RACE = '1'` (and the equivalent environment assignment for the opt-in fixtures) before each relevant command. The race flag instruments the Go test harness; the environment flag additionally instruments spawned HappySync workers. Process/network tests use disposable roots and real local sockets. No personal directory should be used as a synchronization fault fixture.
+PowerShell uses `$env:HAPPYSYNC_INTEGRATION_RACE = '1'` (and the equivalent environment assignment for the opt-in fixtures) before each relevant command. The race flag instruments the Go test harness; the environment flag additionally instruments spawned HappySync workers. The mDNS fixture requires `HAPPYSYNC_MDNS_TEST=1` on a host with multicast routing available: it must discover and authenticate both peers and verify an encrypted block transfer. Hosted CI does not guarantee local multicast routing, so its portable suite omits this fixture; CI success does not establish mDNS acceptance. Process/network tests use disposable roots and real local sockets. No personal directory should be used as a synchronization fault fixture.
 
 ## Milestone coverage
 

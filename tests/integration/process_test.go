@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happysync/happysync/internal/daemon"
 	_ "modernc.org/sqlite"
 )
 
@@ -217,7 +218,19 @@ func (n *instance) stop() {
 		n.t.Errorf("stop worker: %v", err)
 		return
 	}
-	wait(n.t, 15*time.Second, "worker stop", func() bool { s, err := n.status(); return err == nil && s.State == "stopped" })
+	// The public stop command must complete cleanup before returning. A closed
+	// IPC endpoint alone does not prove the database, logs and root are released.
+	lock, err := daemon.Lock(n.root)
+	if err != nil {
+		n.t.Errorf("stop returned before releasing the worker root: %v", err)
+		return
+	}
+	if err := lock.Close(); err != nil {
+		n.t.Errorf("release stopped root check: %v", err)
+	}
+	if s, err := n.status(); err != nil || s.State != "stopped" {
+		n.t.Errorf("stop returned without stopped status: state=%q error=%v", s.State, err)
+	}
 	n.running = false
 	logs, err := os.ReadDir(filepath.Join(n.root, ".HappySync", "logs"))
 	if err != nil {
@@ -237,8 +250,6 @@ func (n *instance) stop() {
 			}
 		}
 	}
-	// IPC closes just before the final lock/database cleanup.
-	time.Sleep(100 * time.Millisecond)
 }
 
 func write(t *testing.T, root, path string, data []byte) {
