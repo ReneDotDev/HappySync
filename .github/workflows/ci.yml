@@ -1,12 +1,18 @@
-name: Validate
+name: Validate and release
 
 on:
   push:
+    branches: ['**']
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
 
 jobs:
   native:
@@ -30,6 +36,8 @@ jobs:
         run: go test -race -count=1 -timeout=15m ./...
       - name: Vet
         run: go vet ./...
+      - name: Release publication tests
+        run: python3 -m unittest discover -s tests/release -v
       - name: Build native executable
         run: go build -trimpath -buildvcs=false ./cmd/HappySync
 
@@ -65,20 +73,53 @@ jobs:
         with:
           go-version: '1.26.0'
           cache: true
+      - name: Select build version
+        run: |
+          version=v0.1.0-dev
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF_TYPE" == tag ]]; then
+            version="$GITHUB_REF_NAME"
+          fi
+          printf 'BUILD_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
       - name: Build four portable artifacts
-        run: go run ./cmd/release --version v0.1.0-dev
+        run: go run ./cmd/release --version "$BUILD_VERSION"
       - name: Verify checksums
         working-directory: dist
         run: sha256sum -c SHA256SUMS
       - name: Inspect executable and dynamic dependencies
         run: |
           file dist/HappySync-*
-          ! readelf -d dist/HappySync-v0.1.0-dev-linux-amd64 | grep NEEDED
-          ! readelf -d dist/HappySync-v0.1.0-dev-linux-arm64 | grep NEEDED
-          dist/HappySync-v0.1.0-dev-linux-amd64 version
+          for arch in amd64 arm64; do
+            readelf -d "dist/HappySync-$BUILD_VERSION-linux-$arch" > "$RUNNER_TEMP/dynamic.txt"
+            if grep -q NEEDED "$RUNNER_TEMP/dynamic.txt"; then
+              echo "Linux $arch binary has unexpected dynamic dependencies" >&2
+              exit 1
+            fi
+          done
+          test "$("dist/HappySync-$BUILD_VERSION-linux-amd64" version)" = "HappySync $BUILD_VERSION"
       - uses: actions/upload-artifact@v4
         with:
           name: HappySync-review-builds
           path: dist/
           if-no-files-found: error
           retention-days: 14
+
+  publish:
+    if: github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs: [native, artifacts]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: HappySync-review-builds
+          path: dist
+      - name: Verify and publish tagged release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: python3 scripts/publish_release.py "$RELEASE_VERSION" dist

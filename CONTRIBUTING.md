@@ -54,4 +54,13 @@ go run ./cmd/release --version v0.1.0
 
 The release tool uses `CGO_ENABLED=0`, `-trimpath`, `-buildvcs=false`, and an injected version, then writes `dist/SHA256SUMS` and `dist/build.json`. It refuses unsafe versions and unsupported/duplicate targets. Check the executable's `version` output on each native platform and verify every distributed checksum. Record exact Go/dependency versions and validation gaps in release notes. Rebuild identical inputs to compare artifact hashes.
 
-CI creates artifacts for review; publication is a separate maintainer action. Security vulnerabilities should follow [SECURITY.md](SECURITY.md).
+Pushing a version tag automatically builds and publishes those four binaries, `SHA256SUMS`, and `build.json` after native Linux/macOS tests, instrumented race suites, vet, and artifact checks pass:
+
+```sh
+git tag -a v0.1.0 -m 'HappySync v0.1.0'
+git push origin v0.1.0
+```
+
+Use an unused `vMAJOR.MINOR.PATCH` tag, or a preview such as `v0.2.0-alpha.1`. Preview tags become prereleases; stable releases become latest. Publication verifies the downloaded artifacts and checks the remote tag still points to the tested commit. Assets upload as a draft before it becomes public. Existing releases are never overwritten: if publication is interrupted, inspect any draft and resolve it before rerunning the failed job. Branch pushes and pull requests produce review artifacts without publishing. Optional scale fixtures still require manual workflow dispatch.
+
+Security vulnerabilities should follow [SECURITY.md](SECURITY.md).

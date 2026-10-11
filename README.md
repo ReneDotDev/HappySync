@@ -131,4 +131,6 @@ go run ./cmd/release --version v0.1.0
 
 The release command builds four CGO-free Linux and macOS binaries for amd64 and arm64 into `dist/`, with `SHA256SUMS` and build metadata. `--targets linux/amd64,darwin/arm64` selects a subset. Go is required to build, not to run the resulting client. Identical source, toolchain, dependency checksums, target, and version determine reproducibility; use identical inputs when comparing hashes.
 
+Pushing a new `vMAJOR.MINOR.PATCH` tag automatically publishes those four binaries, checksums, and build metadata after Linux/macOS validation succeeds. Tags with a suffix, such as `v0.2.0-alpha.1`, publish as prereleases. See [release instructions](CONTRIBUTING.md#prepare-a-release).
+
 [CONTRIBUTING.md](CONTRIBUTING.md) covers tests, repository layout, protocol changes, and release review. CI includes native Linux/macOS tests and race detection plus cross-platform release artifacts; a manual CI run also exercises the large-file and 100,000-file fixtures. [Validation notes](docs/validation.md) distinguish measured local evidence from external acceptance still pending. This repository is licensed under the [MIT license](LICENSE).
